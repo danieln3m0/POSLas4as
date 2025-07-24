@@ -8,6 +8,11 @@ import com.las4as.POSBackend.IAM.Interfaces.transform.UserDTO;
 import com.las4as.POSBackend.IAM.Interfaces.transform.UserTransformer;
 import com.las4as.POSBackend.shared.interfaces.rest.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,7 +33,70 @@ public class UserResource {
     private final UserTransformer userTransformer;
     
     @PostMapping
-    @Operation(summary = "Crear usuario", description = "Crea un nuevo usuario en el sistema")
+    @Operation(
+        summary = "Crear usuario", 
+        description = "Crea un nuevo usuario en el sistema con validaciones completas de datos únicos y campos requeridos",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Datos del nuevo usuario a crear",
+            required = true,
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CreateUserRequest.class),
+                examples = @ExampleObject(
+                    name = "Ejemplo de creación de usuario",
+                    summary = "Usuario nuevo con rol USER por defecto",
+                    value = "{\n  \"username\": \"jperez\",\n  \"email\": \"juan.perez@company.com\",\n  \"password\": \"miPassword123\",\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"roleNames\": [\"USER\"]\n}"
+                )
+            )
+        )
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "201", 
+            description = "Usuario creado exitosamente",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Usuario creado",
+                    summary = "Respuesta exitosa con datos del usuario",
+                    value = "{\n  \"success\": true,\n  \"message\": \"Usuario creado exitosamente\",\n  \"code\": \"USER_CREATED\",\n  \"data\": {\n    \"id\": 3,\n    \"username\": \"jperez\",\n    \"email\": \"juan.perez@company.com\",\n    \"fullName\": \"Juan Pérez\",\n    \"active\": true,\n    \"roles\": [\"USER\"]\n  }\n}"
+                )
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Datos de entrada inválidos",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Error de validación",
+                    value = "{\n  \"success\": false,\n  \"message\": \"El nombre de usuario es requerido\",\n  \"code\": \"USERNAME_REQUIRED\"\n}"
+                )
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409", 
+            description = "Conflicto - Usuario o email ya existe",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Username duplicado",
+                    value = "{\n  \"success\": false,\n  \"message\": \"El nombre de usuario ya está en uso\",\n  \"code\": \"USERNAME_ALREADY_EXISTS\"\n}"
+                )
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500", 
+            description = "Error interno del servidor",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Error interno",
+                    value = "{\n  \"success\": false,\n  \"message\": \"Error interno del servidor. Por favor, intente nuevamente.\",\n  \"code\": \"INTERNAL_SERVER_ERROR\"\n}"
+                )
+            )
+        )
+    })
     public ResponseEntity<ApiResponse<UserDTO>> createUser(@RequestBody CreateUserRequest request) {
         try {
             // Validar que los campos requeridos no estén vacíos
@@ -127,7 +195,41 @@ public class UserResource {
     }
     
     @GetMapping("/{userId}")
-    @Operation(summary = "Obtener usuario por ID", description = "Obtiene la información de un usuario específico")
+    @Operation(
+        summary = "Obtener usuario por ID", 
+        description = "Obtiene la información completa de un usuario específico mediante su identificador único",
+        parameters = @Parameter(
+            name = "userId",
+            description = "Identificador único del usuario",
+            example = "1",
+            required = true
+        )
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Usuario encontrado exitosamente",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Usuario encontrado",
+                    summary = "Información completa del usuario",
+                    value = "{\n  \"id\": 1,\n  \"username\": \"admin\",\n  \"email\": \"admin@pos.com\",\n  \"fullName\": \"Administrador Sistema\",\n  \"active\": true,\n  \"roles\": [\"ADMIN\", \"USER\"]\n}"
+                )
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Usuario no encontrado",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Usuario no encontrado",
+                    value = "{\n  \"error\": \"Usuario no encontrado\"\n}"
+                )
+            )
+        )
+    })
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId) {
         return userQueryService.findById(userId)
                 .map(user -> ResponseEntity.ok(userTransformer.toDTO(user)))
@@ -135,7 +237,24 @@ public class UserResource {
     }
     
     @GetMapping
-    @Operation(summary = "Listar usuarios", description = "Obtiene la lista de todos los usuarios activos")
+    @Operation(
+        summary = "Listar usuarios activos", 
+        description = "Obtiene la lista completa de todos los usuarios activos en el sistema. No incluye usuarios desactivados."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Lista de usuarios obtenida exitosamente",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Lista de usuarios",
+                    summary = "Array con todos los usuarios activos",
+                    value = "[\n  {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@pos.com\",\n    \"fullName\": \"Administrador Sistema\",\n    \"active\": true,\n    \"roles\": [\"ADMIN\", \"USER\"]\n  },\n  {\n    \"id\": 2,\n    \"username\": \"vendedor1\",\n    \"email\": \"vendedor@pos.com\",\n    \"fullName\": \"Juan Vendedor\",\n    \"active\": true,\n    \"roles\": [\"USER\"]\n  }\n]"
+                )
+            )
+        )
+    })
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         List<User> users = userQueryService.findActiveUsers();
         List<UserDTO> userDTOs = users.stream()
@@ -146,26 +265,98 @@ public class UserResource {
     }
     
     @GetMapping("/check-username/{username}")
-    @Operation(summary = "Verificar disponibilidad de username", description = "Verifica si un nombre de usuario está disponible")
+    @Operation(
+        summary = "Verificar disponibilidad de username", 
+        description = "Verifica si un nombre de usuario está disponible para registro. Útil para validación en tiempo real en formularios.",
+        parameters = @Parameter(
+            name = "username",
+            description = "Nombre de usuario a verificar su disponibilidad",
+            example = "nuevo_usuario",
+            required = true
+        )
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Verificación completada",
+            content = @Content(
+                mediaType = "application/json",
+                examples = {
+                    @ExampleObject(
+                        name = "Username disponible",
+                        summary = "El username está libre para uso",
+                        value = "true"
+                    ),
+                    @ExampleObject(
+                        name = "Username no disponible",
+                        summary = "El username ya está en uso",
+                        value = "false"
+                    )
+                }
+            )
+        )
+    })
     public ResponseEntity<Boolean> isUsernameAvailable(@PathVariable String username) {
         boolean isAvailable = !userQueryService.existsByUsername(username);
         return ResponseEntity.ok(isAvailable);
     }
     
     @GetMapping("/check-email/{email}")
-    @Operation(summary = "Verificar disponibilidad de email", description = "Verifica si un email está disponible")
+    @Operation(
+        summary = "Verificar disponibilidad de email", 
+        description = "Verifica si una dirección de email está disponible para registro. Útil para validación en tiempo real en formularios.",
+        parameters = @Parameter(
+            name = "email",
+            description = "Dirección de email a verificar su disponibilidad",
+            example = "nuevo@empresa.com",
+            required = true
+        )
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Verificación completada",
+            content = @Content(
+                mediaType = "application/json",
+                examples = {
+                    @ExampleObject(
+                        name = "Email disponible",
+                        summary = "El email está libre para uso",
+                        value = "true"
+                    ),
+                    @ExampleObject(
+                        name = "Email no disponible",
+                        summary = "El email ya está registrado",
+                        value = "false"
+                    )
+                }
+            )
+        )
+    })
     public ResponseEntity<Boolean> isEmailAvailable(@PathVariable String email) {
         boolean isAvailable = !userQueryService.existsByEmail(email);
         return ResponseEntity.ok(isAvailable);
     }
     
     // Clase interna para el request
+    @Schema(description = "Datos requeridos para crear un nuevo usuario")
     public static class CreateUserRequest {
+        @Schema(description = "Nombre de usuario único en el sistema", example = "jperez", required = true)
         private String username;
+        
+        @Schema(description = "Dirección de email única del usuario", example = "juan.perez@company.com", required = true)
         private String email;
+        
+        @Schema(description = "Contraseña del usuario (mínimo 6 caracteres)", example = "miPassword123", required = true)
         private String password;
+        
+        @Schema(description = "Nombre(s) del usuario", example = "Juan", required = true)
         private String firstName;
+        
+        @Schema(description = "Apellido(s) del usuario", example = "Pérez", required = true)
         private String lastName;
+        
+        @Schema(description = "Lista de roles a asignar al usuario (por defecto USER si no se especifica)", example = "[\"USER\"]")
         private List<String> roleNames;
         
         // Getters y setters
