@@ -101,7 +101,7 @@ public class Product extends AuditableAbstractAggregateRoot<Product> {
         this.leadTimeDays = leadTimeDays;
         
         // Publicar evento de dominio
-        registerEvent(new ProductCreatedEvent(null, this.sku.toString(), this.name));
+        registerEvent(new ProductCreatedEvent(this, null, this.sku.toString(), this.name));
     }
     
     public void updateBasicInfo(String name, String description, Price purchasePrice, Price salePrice) {
