@@ -33,6 +33,8 @@ public class ProductResource {
     @Operation(summary = "Crear producto", description = "Crea un nuevo producto en el inventario")
     public ResponseEntity<ProductDTO> createProduct(@RequestBody CreateProductRequest request) {
         try {
+            System.out.println("DEBUG: Iniciando creación de producto con SKU: " + request.getSku());
+            
             CreateProductCommand command = new CreateProductCommand(
                 request.getSku(),
                 request.getName(),
@@ -50,12 +52,22 @@ public class ProductResource {
                 request.getLeadTimeDays()
             );
             
+            System.out.println("DEBUG: Comando creado, ejecutando servicio...");
             Product product = createProductCommandService.execute(command);
+            System.out.println("DEBUG: Producto creado con ID: " + product.getId());
+            
             ProductDTO productDTO = productTransformer.toDTO(product);
+            System.out.println("DEBUG: DTO transformado exitosamente");
             
             return ResponseEntity.status(HttpStatus.CREATED).body(productDTO);
         } catch (IllegalArgumentException e) {
+            System.err.println("DEBUG: IllegalArgumentException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            System.err.println("DEBUG: Exception inesperada: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
     
