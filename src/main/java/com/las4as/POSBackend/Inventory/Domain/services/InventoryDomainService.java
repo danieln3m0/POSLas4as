@@ -10,9 +10,8 @@ import com.las4as.POSBackend.Inventory.Domain.model.entities.Supplier;
 import com.las4as.POSBackend.Inventory.Domain.model.valueobjects.Quantity;
 import com.las4as.POSBackend.Inventory.Domain.model.valueobjects.SKU;
 
-import java.time.LocalDate;
+
 import java.util.List;
-import java.util.Optional;
 
 public interface InventoryDomainService {
     
