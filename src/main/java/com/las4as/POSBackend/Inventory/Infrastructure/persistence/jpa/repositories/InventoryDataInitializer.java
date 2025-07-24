@@ -1,6 +1,7 @@
 package com.las4as.POSBackend.Inventory.Infrastructure.persistence.jpa.repositories;
 
 import com.las4as.POSBackend.Inventory.Domain.model.entities.Category;
+import com.las4as.POSBackend.Inventory.Domain.model.entities.Location;
 import com.las4as.POSBackend.Inventory.Domain.model.entities.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +17,13 @@ public class InventoryDataInitializer implements CommandLineRunner {
     
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
+    private final LocationRepository locationRepository;
     
     @Override
     public void run(String... args) throws Exception {
         initializeCategories();
         initializeSuppliers();
+        initializeLocations();
     }
     
     private void initializeCategories() {
@@ -100,6 +103,50 @@ public class InventoryDataInitializer implements CommandLineRunner {
             supplierRepository.save(supplier3);
             
             log.info("Proveedores inicializados correctamente");
+        }
+    }
+    
+    private void initializeLocations() {
+        if (locationRepository.count() == 0) {
+            log.info("Inicializando ubicaciones del sistema...");
+            
+            Location warehouse = new Location(
+                "Almacén Principal",
+                "Av. Industrial 123",
+                "Lima",
+                "Lima",
+                "15001", 
+                "Perú",
+                Location.LocationType.WAREHOUSE,
+                "Almacén principal para almacenamiento de productos"
+            );
+            locationRepository.save(warehouse);
+            
+            Location store1 = new Location(
+                "Tienda Centro",
+                "Jr. La Unión 456", 
+                "Lima",
+                "Lima",
+                "15001",
+                "Perú",
+                Location.LocationType.STORE,
+                "Tienda ubicada en el centro de Lima"
+            );
+            locationRepository.save(store1);
+            
+            Location distribution = new Location(
+                "Centro de Distribución",
+                "Av. Logística 789",
+                "Lima",
+                "Lima", 
+                "15002",
+                "Perú",
+                Location.LocationType.DISTRIBUTION,
+                "Centro de distribución para envíos"
+            );
+            locationRepository.save(distribution);
+            
+            log.info("Ubicaciones inicializadas correctamente");
         }
     }
 }
