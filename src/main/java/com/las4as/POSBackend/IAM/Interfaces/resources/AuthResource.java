@@ -4,8 +4,12 @@ import com.las4as.POSBackend.IAM.Application.queryServices.UserQueryService;
 import com.las4as.POSBackend.IAM.Application.outboundServices.TokenService;
 import com.las4as.POSBackend.IAM.Domain.model.aggregates.User;
 import com.las4as.POSBackend.IAM.Domain.model.valueobjects.Password;
-import com.las4as.POSBackend.IAM.Domain.model.valueobjects.Username;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +28,61 @@ public class AuthResource {
     private final TokenService tokenService;
     
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y retorna un token JWT")
+    @Operation(
+        summary = "Iniciar sesión", 
+        description = "Autentica un usuario con sus credenciales y retorna un token JWT válido junto con la información del usuario",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Credenciales de acceso del usuario",
+            required = true,
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = LoginRequest.class),
+                examples = @ExampleObject(
+                    name = "Ejemplo de login",
+                    summary = "Credenciales de usuario administrador",
+                    value = "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+                )
+            )
+        )
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Autenticación exitosa",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Login exitoso",
+                    summary = "Respuesta con token y datos del usuario",
+                    value = "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@pos.com\",\n    \"fullName\": \"Administrador Sistema\"\n  }\n}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400", 
+            description = "Datos de entrada inválidos",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Error de validación",
+                    value = "{\n  \"error\": \"Datos de entrada inválidos\"\n}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Credenciales inválidas o usuario inactivo",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Credenciales incorrectas",
+                    value = "{\n  \"error\": \"Credenciales inválidas\"\n}"
+                )
+            )
+        )
+    })
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
         try {
-            Username username = new Username(request.getUsername());
             Password password = new Password(request.getPassword());
             
             // Buscar usuario por username
@@ -62,7 +117,48 @@ public class AuthResource {
     }
     
     @PostMapping("/validate")
-    @Operation(summary = "Validar token", description = "Valida un token JWT y retorna la información del usuario")
+    @Operation(
+        summary = "Validar token JWT", 
+        description = "Valida un token JWT y retorna la información del usuario autenticado si el token es válido",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Token JWT a validar",
+            required = true,
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TokenRequest.class),
+                examples = @ExampleObject(
+                    name = "Ejemplo de validación",
+                    summary = "Token JWT para validar",
+                    value = "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY0MjY4NjAwMH0...\"\n}"
+                )
+            )
+        )
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200", 
+            description = "Token válido",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Token válido",
+                    summary = "Respuesta con validación exitosa",
+                    value = "{\n  \"valid\": true,\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@pos.com\",\n    \"fullName\": \"Administrador Sistema\"\n  }\n}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401", 
+            description = "Token inválido o expirado",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    name = "Token inválido",
+                    value = "{\n  \"error\": \"Token inválido\"\n}"
+                )
+            )
+        )
+    })
     public ResponseEntity<Map<String, Object>> validateToken(@RequestBody TokenRequest request) {
         try {
             String username = tokenService.validateToken(request.getToken());
@@ -88,8 +184,12 @@ public class AuthResource {
     }
     
     // Clases internas para requests
+    @Schema(description = "Datos requeridos para iniciar sesión")
     public static class LoginRequest {
+        @Schema(description = "Nombre de usuario único en el sistema", example = "admin", required = true)
         private String username;
+        
+        @Schema(description = "Contraseña del usuario", example = "admin123", required = true)
         private String password;
         
         public String getUsername() { return username; }
@@ -99,7 +199,9 @@ public class AuthResource {
         public void setPassword(String password) { this.password = password; }
     }
     
+    @Schema(description = "Token JWT para validar")
     public static class TokenRequest {
+        @Schema(description = "Token JWT generado en el login", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", required = true)
         private String token;
         
         public String getToken() { return token; }
