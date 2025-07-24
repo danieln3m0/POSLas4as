@@ -9,8 +9,8 @@ public class ProductCreatedEvent extends ApplicationEvent {
     private final String sku;
     private final String name;
     
-    public ProductCreatedEvent(Long productId, String sku, String name) {
-        super(productId);
+    public ProductCreatedEvent(Object source, Long productId, String sku, String name) {
+        super(source);
         this.productId = productId;
         this.sku = sku;
         this.name = name;
