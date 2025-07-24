@@ -4,7 +4,6 @@ import com.las4as.POSBackend.Inventory.Domain.model.entities.Category;
 import com.las4as.POSBackend.Inventory.Domain.model.entities.Supplier;
 import com.las4as.POSBackend.Inventory.Domain.model.entities.StockItem;
 import com.las4as.POSBackend.Inventory.Domain.model.events.ProductCreatedEvent;
-import com.las4as.POSBackend.Inventory.Domain.model.events.ProductStockUpdatedEvent;
 import com.las4as.POSBackend.Inventory.Domain.model.valueobjects.Price;
 import com.las4as.POSBackend.Inventory.Domain.model.valueobjects.SKU;
 import com.las4as.POSBackend.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;

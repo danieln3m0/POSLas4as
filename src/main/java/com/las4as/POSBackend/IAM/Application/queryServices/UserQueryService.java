@@ -1,7 +1,6 @@
 package com.las4as.POSBackend.IAM.Application.queryServices;
 
 import com.las4as.POSBackend.IAM.Domain.model.aggregates.User;
-import com.las4as.POSBackend.IAM.Domain.model.queries.UserQuery;
 import com.las4as.POSBackend.IAM.Infrastructure.persistence.jpa.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
