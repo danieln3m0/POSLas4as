@@ -35,30 +35,38 @@ public interface DataConsentRepository extends JpaRepository<DataConsent, Long> 
     // Métodos adicionales requeridos por DataConsentQueryService
     List<DataConsent> findByCustomerDocumentOrderByGrantedAtDesc(String customerDocument);
     
-    List<DataConsent> findByCustomerDocumentAndIsActiveTrueOrderByGrantedAtDesc(String customerDocument);
+    @Query("SELECT dc FROM DataConsent dc WHERE dc.customerDocument = :customerDocument AND dc.isGranted = true AND dc.isRevoked = false ORDER BY dc.grantedAt DESC")
+    List<DataConsent> findByCustomerDocumentAndIsActiveTrueOrderByGrantedAtDesc(@Param("customerDocument") String customerDocument);
     
+    @Query("SELECT dc FROM DataConsent dc WHERE dc.customerDocument = :customerDocument AND dc.consentType = :consentType AND dc.isGranted = true AND dc.isRevoked = false")
     DataConsent findByCustomerDocumentAndConsentTypeAndIsActiveTrue(
-        String customerDocument, 
-        DataConsent.ConsentType consentType
+        @Param("customerDocument") String customerDocument, 
+        @Param("consentType") DataConsent.ConsentType consentType
     );
     
-    List<DataConsent> findByRetentionUntilBeforeAndIsActiveTrue(LocalDateTime currentDate);
+    @Query("SELECT dc FROM DataConsent dc WHERE dc.grantedAt < :currentDate AND dc.isGranted = true AND dc.isRevoked = false AND dc.retentionPeriodMonths IS NOT NULL")
+    List<DataConsent> findByRetentionUntilBeforeAndIsActiveTrue(@Param("currentDate") LocalDateTime currentDate);
     
-    List<DataConsent> findByRetentionUntilBeforeAndIsActiveTrueOrderByRetentionUntilAsc(LocalDateTime expirationThreshold);
+    @Query("SELECT dc FROM DataConsent dc WHERE dc.grantedAt < :expirationThreshold AND dc.isGranted = true AND dc.isRevoked = false AND dc.retentionPeriodMonths IS NOT NULL ORDER BY dc.grantedAt ASC")
+    List<DataConsent> findByRetentionUntilBeforeAndIsActiveTrueOrderByRetentionUntilAsc(@Param("expirationThreshold") LocalDateTime expirationThreshold);
     
-    long countByConsentTypeAndIsActiveTrue(DataConsent.ConsentType consentType);
+    @Query("SELECT COUNT(dc) FROM DataConsent dc WHERE dc.consentType = :consentType AND dc.isGranted = true AND dc.isRevoked = false")
+    long countByConsentTypeAndIsActiveTrue(@Param("consentType") DataConsent.ConsentType consentType);
     
-    List<DataConsent> findByLegalBasisAndIsActiveTrueOrderByGrantedAtDesc(DataConsent.LegalBasis legalBasis);
+    @Query("SELECT dc FROM DataConsent dc WHERE dc.legalBasis = :legalBasis AND dc.isGranted = true AND dc.isRevoked = false ORDER BY dc.grantedAt DESC")
+    List<DataConsent> findByLegalBasisAndIsActiveTrueOrderByGrantedAtDesc(@Param("legalBasis") DataConsent.LegalBasis legalBasis);
     
     List<DataConsent> findByGrantedAtBetweenOrderByGrantedAtDesc(
         LocalDateTime startDate, 
         LocalDateTime endDate
     );
     
+    @Query("SELECT dc FROM DataConsent dc WHERE dc.isGranted = true AND dc.isRevoked = false ORDER BY dc.grantedAt DESC")
     List<DataConsent> findByIsActiveTrueOrderByGrantedAtDesc();
     
+    @Query("SELECT dc FROM DataConsent dc WHERE (dc.isGranted = false OR dc.isRevoked = true) AND dc.revokedAt BETWEEN :startDate AND :endDate ORDER BY dc.revokedAt DESC")
     List<DataConsent> findByIsActiveFalseAndRevokedAtBetweenOrderByRevokedAtDesc(
-        LocalDateTime startDate, 
-        LocalDateTime endDate
+        @Param("startDate") LocalDateTime startDate, 
+        @Param("endDate") LocalDateTime endDate
     );
 }

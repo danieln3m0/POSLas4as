@@ -63,8 +63,9 @@ public class SecurityConfiguration {
                 .requestMatchers("/api/v1/consent/register").permitAll() // Registro de consentimientos público
                 .requestMatchers("/api/v1/consent/check/**").permitAll() // Verificación de consentimientos público
 
-                // Swagger/OpenAPI
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Swagger/OpenAPI - Allow all Swagger and OpenAPI documentation paths
+                .requestMatchers("/api-docs/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
+                .requestMatchers("/webjars/**", "/swagger-resources/**", "/configuration/**").permitAll()
                 
                 // Permitir acceso a la raíz y endpoints de salud
                 .requestMatchers("/", "/health", "/actuator/**").permitAll()
