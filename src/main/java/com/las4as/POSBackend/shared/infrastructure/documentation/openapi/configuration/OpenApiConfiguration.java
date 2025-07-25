@@ -31,7 +31,7 @@ public class OpenApiConfiguration {
                         description("Documentación del Sistema POS")
                         .url("https://github.com/las4as/POSBackend"));
 
-        final String securitySchemeName = "bearerAuth";
+        final String securitySchemeName = "Bearer Authentication";
 
         openApi.addSecurityItem(new SecurityRequirement()
                         .addList(securitySchemeName))

@@ -25,38 +25,80 @@ public class DataInitializer implements CommandLineRunner {
     }
     
     private void initializeRoles() {
-        if (roleRepository.count() == 0) {
+        // Verificar si faltan roles requeridos
+        boolean needsInitialization = roleRepository.findByName("CASHIER").isEmpty() ||
+                                    roleRepository.findByName("INVENTORY_MANAGER").isEmpty() ||
+                                    roleRepository.findByName("DATA_PROTECTION_OFFICER").isEmpty();
+        
+        if (roleRepository.count() == 0 || needsInitialization) {
             log.info("Inicializando roles del sistema...");
             
             // Rol de Administrador
-            Role adminRole = new Role("ADMIN", "Administrador del sistema con acceso completo");
-            adminRole.addPermission("user:create");
-            adminRole.addPermission("user:read");
-            adminRole.addPermission("user:update");
-            adminRole.addPermission("user:delete");
-            adminRole.addPermission("role:create");
-            adminRole.addPermission("role:read");
-            adminRole.addPermission("role:update");
-            adminRole.addPermission("role:delete");
-            adminRole.addPermission("inventory:manage");
-            adminRole.addPermission("reports:view");
-            roleRepository.save(adminRole);
+            if (roleRepository.findByName("ADMIN").isEmpty()) {
+                Role adminRole = new Role("ADMIN", "Administrador del sistema con acceso completo");
+                adminRole.addPermission("user:create");
+                adminRole.addPermission("user:read");
+                adminRole.addPermission("user:update");
+                adminRole.addPermission("user:delete");
+                adminRole.addPermission("role:create");
+                adminRole.addPermission("role:read");
+                adminRole.addPermission("role:update");
+                adminRole.addPermission("role:delete");
+                adminRole.addPermission("inventory:manage");
+                adminRole.addPermission("reports:view");
+                roleRepository.save(adminRole);
+            }
             
-            // Rol de Vendedor
-            Role sellerRole = new Role("SELLER", "Vendedor con acceso a ventas e inventario básico");
-            sellerRole.addPermission("inventory:read");
-            sellerRole.addPermission("sales:create");
-            sellerRole.addPermission("sales:read");
-            sellerRole.addPermission("products:read");
-            roleRepository.save(sellerRole);
+            // Rol de Cajero
+            if (roleRepository.findByName("CASHIER").isEmpty()) {
+                Role cashierRole = new Role("CASHIER", "Cajero con acceso a ventas y operaciones básicas");
+                cashierRole.addPermission("sales:create");
+                cashierRole.addPermission("sales:read");
+                cashierRole.addPermission("products:read");
+                cashierRole.addPermission("inventory:read");
+                roleRepository.save(cashierRole);
+            }
             
-            // Rol de Inventario
-            Role inventoryRole = new Role("INVENTORY", "Encargado de inventario con acceso completo al módulo");
-            inventoryRole.addPermission("inventory:manage");
-            inventoryRole.addPermission("products:manage");
-            inventoryRole.addPermission("suppliers:manage");
-            inventoryRole.addPermission("purchases:manage");
-            roleRepository.save(inventoryRole);
+            // Rol de Encargado de Inventario
+            if (roleRepository.findByName("INVENTORY_MANAGER").isEmpty()) {
+                Role inventoryManagerRole = new Role("INVENTORY_MANAGER", "Encargado de inventario con acceso completo al módulo");
+                inventoryManagerRole.addPermission("inventory:manage");
+                inventoryManagerRole.addPermission("products:manage");
+                inventoryManagerRole.addPermission("suppliers:manage");
+                inventoryManagerRole.addPermission("purchases:manage");
+                inventoryManagerRole.addPermission("reports:view");
+                roleRepository.save(inventoryManagerRole);
+            }
+            
+            // Rol de Oficial de Protección de Datos
+            if (roleRepository.findByName("DATA_PROTECTION_OFFICER").isEmpty()) {
+                Role dataProtectionOfficerRole = new Role("DATA_PROTECTION_OFFICER", "Oficial de protección de datos");
+                dataProtectionOfficerRole.addPermission("data:view");
+                dataProtectionOfficerRole.addPermission("data:export");
+                dataProtectionOfficerRole.addPermission("audit:view");
+                dataProtectionOfficerRole.addPermission("privacy:manage");
+                roleRepository.save(dataProtectionOfficerRole);
+            }
+            
+            // Mantener rol de Vendedor para compatibilidad (deprecado)
+            if (roleRepository.findByName("SELLER").isEmpty()) {
+                Role sellerRole = new Role("SELLER", "Vendedor con acceso a ventas e inventario básico (deprecado - usar CASHIER)");
+                sellerRole.addPermission("inventory:read");
+                sellerRole.addPermission("sales:create");
+                sellerRole.addPermission("sales:read");
+                sellerRole.addPermission("products:read");
+                roleRepository.save(sellerRole);
+            }
+            
+            // Mantener rol de Inventario para compatibilidad (deprecado)
+            if (roleRepository.findByName("INVENTORY").isEmpty()) {
+                Role inventoryRole = new Role("INVENTORY", "Encargado de inventario (deprecado - usar INVENTORY_MANAGER)");
+                inventoryRole.addPermission("inventory:manage");
+                inventoryRole.addPermission("products:manage");
+                inventoryRole.addPermission("suppliers:manage");
+                inventoryRole.addPermission("purchases:manage");
+                roleRepository.save(inventoryRole);
+            }
             
             log.info("Roles inicializados correctamente");
         }

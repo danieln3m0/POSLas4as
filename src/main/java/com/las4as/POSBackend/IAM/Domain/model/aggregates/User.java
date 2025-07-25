@@ -135,6 +135,17 @@ public class User extends AuditableAbstractAggregateRoot<User> {
         this.isActive = false;
     }
     
+    public void updatePersonalInfo(String firstName, String lastName) {
+        if (firstName == null || firstName.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre no puede estar vacío");
+        }
+        if (lastName == null || lastName.trim().isEmpty()) {
+            throw new IllegalArgumentException("El apellido no puede estar vacío");
+        }
+        this.firstName = firstName.trim();
+        this.lastName = lastName.trim();
+    }
+    
     public void verifyEmail() {
         this.isEmailVerified = true;
     }
