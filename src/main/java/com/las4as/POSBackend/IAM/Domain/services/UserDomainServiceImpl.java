@@ -1,5 +1,6 @@
 package com.las4as.POSBackend.IAM.Domain.services;
 
+import com.las4as.POSBackend.IAM.Application.outboundServices.HashingService;
 import com.las4as.POSBackend.IAM.Domain.model.aggregates.User;
 import com.las4as.POSBackend.IAM.Domain.model.commands.CreateUserCommand;
 import com.las4as.POSBackend.IAM.Domain.model.entities.Role;
@@ -17,13 +18,18 @@ import java.util.List;
 public class UserDomainServiceImpl implements UserDomainService {
     
     private final UserRepository userRepository;
+    private final HashingService hashingService;
     
     @Override
     public User createUser(CreateUserCommand command) {
+        // Hashear la contraseña antes de crear el usuario
+        String hashedPassword = hashingService.hash(command.getPassword().toString());
+        Password passwordHashed = Password.fromHash(hashedPassword);
+        
         return new User(
             command.getUsername(),
             command.getEmail(),
-            command.getPassword(),
+            passwordHashed,
             command.getFirstName(),
             command.getLastName()
         );
@@ -31,10 +37,14 @@ public class UserDomainServiceImpl implements UserDomainService {
     
     @Override
     public User createUserWithRoles(CreateUserCommand command, List<Role> roles) {
+        // Hashear la contraseña antes de crear el usuario
+        String hashedPassword = hashingService.hash(command.getPassword().toString());
+        Password passwordHashed = Password.fromHash(hashedPassword);
+        
         User user = new User(
             command.getUsername(),
             command.getEmail(),
-            command.getPassword(),
+            passwordHashed,
             command.getFirstName(),
             command.getLastName()
         );
@@ -62,13 +72,16 @@ public class UserDomainServiceImpl implements UserDomainService {
     @Override
     public boolean validateCredentials(Username username, Password password) {
         return userRepository.findByUsernameValue(username.toString())
-                .map(user -> user.getPassword().toString().equals(password.toString()))
+                .map(user -> hashingService.matches(password.toString(), user.getPassword().toString()))
                 .orElse(false);
     }
     
     @Override
     public void changePassword(User user, Password newPassword) {
-        user.changePassword(newPassword);
+        // Hashear la nueva contraseña
+        String hashedPassword = hashingService.hash(newPassword.toString());
+        Password passwordHashed = Password.fromHash(hashedPassword);
+        user.changePassword(passwordHashed);
     }
     
     @Override

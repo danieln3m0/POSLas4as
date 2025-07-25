@@ -30,6 +30,15 @@ public class Password {
         this.value = value;
     }
     
+    /**
+     * Crea un Password a partir de un hash (para uso interno)
+     */
+    public static Password fromHash(String hashedValue) {
+        Password password = new Password();
+        password.value = hashedValue;
+        return password;
+    }
+    
     @Override
     public String toString() {
         return value;
