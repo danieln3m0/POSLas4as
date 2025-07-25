@@ -1,7 +1,7 @@
 package com.las4as.POSBackend.IAM.Interfaces.resources;
 
 import com.las4as.POSBackend.IAM.Application.outboundServices.TokenService;
-import com.las4as.POSBackend.IAM.Infrastructure.authorization.CustomUserDetailsService;
+import com.las4as.POSBackend.IAM.Application.queryServices.UserQueryService;
 import com.las4as.POSBackend.IAM.Infrastructure.authorization.UserPrincipal;
 import com.las4as.POSBackend.shared.interfaces.rest.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +32,7 @@ public class AuthenticationResource {
     
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserQueryService userQueryService;
     
     @PostMapping("/login")
     @Operation(
@@ -82,7 +82,8 @@ public class AuthenticationResource {
             
             // Cargar el User completo desde el service
             com.las4as.POSBackend.IAM.Domain.model.aggregates.User user = 
-                userDetailsService.getUserByUsername(userPrincipal.getUsername());
+                userQueryService.findByUsername(userPrincipal.getUsername())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             
             String jwt = tokenService.generateToken(user);
             
@@ -117,7 +118,8 @@ public class AuthenticationResource {
                 if (username != null) {
                     // Cargar el usuario y generar nuevo token
                     com.las4as.POSBackend.IAM.Domain.model.aggregates.User user = 
-                        userDetailsService.getUserByUsername(username);
+                        userQueryService.findByUsername(username)
+                            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
                     
                     String newJwt = tokenService.generateToken(user);
                     
