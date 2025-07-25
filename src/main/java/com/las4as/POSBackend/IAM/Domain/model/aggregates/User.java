@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -50,6 +51,24 @@ public class User extends AuditableAbstractAggregateRoot<User> {
     @Column(name = "is_email_verified", nullable = false)
     private boolean isEmailVerified = false;
     
+    @Column(name = "password_expires_at")
+    private LocalDateTime passwordExpiresAt;
+    
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+    
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+    
+    @Column(name = "account_locked_until")
+    private LocalDateTime accountLockedUntil;
+    
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword = false;
+    
+    @Column(name = "password_history", columnDefinition = "TEXT")
+    private String passwordHistory; // JSON con últimas 5 contraseñas hasheadas
+    
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
@@ -70,8 +89,42 @@ public class User extends AuditableAbstractAggregateRoot<User> {
     }
     
     public void changePassword(Password newPassword) {
+        // TODO: Validar que la nueva contraseña no esté en el historial
         this.password = newPassword;
+        this.passwordExpiresAt = LocalDateTime.now().plusDays(90); // 90 días de validez
+        this.mustChangePassword = false;
         registerEvent(new UserPasswordChangedEvent(this.getId(), this.username.toString()));
+    }
+    
+    public void recordSuccessfulLogin() {
+        this.lastLoginAt = LocalDateTime.now();
+        this.failedLoginAttempts = 0;
+        this.accountLockedUntil = null;
+    }
+    
+    public void recordFailedLogin() {
+        this.failedLoginAttempts++;
+        if (this.failedLoginAttempts >= 5) {
+            // Bloquear cuenta por 30 minutos después de 5 intentos fallidos
+            this.accountLockedUntil = LocalDateTime.now().plusMinutes(30);
+        }
+    }
+    
+    public boolean isAccountLocked() {
+        return accountLockedUntil != null && LocalDateTime.now().isBefore(accountLockedUntil);
+    }
+    
+    public boolean isPasswordExpired() {
+        return passwordExpiresAt != null && LocalDateTime.now().isAfter(passwordExpiresAt);
+    }
+    
+    public void forcePasswordChange() {
+        this.mustChangePassword = true;
+    }
+    
+    public void unlockAccount() {
+        this.accountLockedUntil = null;
+        this.failedLoginAttempts = 0;
     }
     
     public void activate() {
